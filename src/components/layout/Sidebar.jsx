@@ -87,7 +87,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen }) {
           </svg>
         </div>
         <div className="logo-text">
-          <span className="logo-name">PropDesk</span>
+          <span className="logo-name">Property Adda</span>
           <span className="logo-sub">Real Estate CRM</span>
         </div>
       </div>
