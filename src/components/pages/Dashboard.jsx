@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import { kpis, pipeline, agents, funnel } from '../../data/mockData';
 import './Dashboard.css';
 
+/* ── KPI Card ─────────────────────────────────────── */
 function KpiCard({ label, value, delta, trend }) {
   return (
     <div className="kpi-card">
@@ -16,6 +17,7 @@ function KpiCard({ label, value, delta, trend }) {
   );
 }
 
+/* ── Pipeline ─────────────────────────────────────── */
 function PipelineView() {
   return (
     <Card>
@@ -36,6 +38,7 @@ function PipelineView() {
   );
 }
 
+/* ── Leaderboard ──────────────────────────────────── */
 function perfColor(pct) {
   if (pct >= 75) return 'var(--green)';
   if (pct >= 45) return 'var(--primary)';
@@ -54,7 +57,7 @@ function Leaderboard() {
     <Card>
       <CardHeader title="Agent Leaderboard" right={<Badge variant="gray">April 2026</Badge>} />
       <CardBody noPad>
-        <table className="data-table">
+        <table className="leaderboard-table">
           <thead>
             <tr>
               <th className="th--padl">Agent</th>
@@ -70,13 +73,13 @@ function Leaderboard() {
                 <td className="td--padl">
                   <div className="agent-row">
                     <span className="rank-num">{i + 1}</span>
-                    <Avatar initials={a.initials} size="sm" color={a.color} />
-                    <span style={{ fontWeight: i === 0 ? 500 : 400 }}>{a.name}</span>
+                    <Avatar initials={a.initials} size="md" color={a.color} />
+                    <span className="agent-name">{a.name}</span>
                   </div>
                 </td>
-                <td>{a.meetings}</td>
+                <td style={{ fontWeight: 500 }}>{a.meetings}</td>
                 <td><Badge variant={dealVariant(a.deals)}>{a.deals}</Badge></td>
-                <td>{a.responseRate}%</td>
+                <td style={{ color: 'var(--text2)' }}>{a.responseRate}%</td>
                 <td className="td--padr">
                   <div className="mini-bar">
                     <div className="mini-bar__fill" style={{ width: `${a.performance}%`, background: perfColor(a.performance) }} />
@@ -91,6 +94,7 @@ function Leaderboard() {
   );
 }
 
+/* ── Funnel ───────────────────────────────────────── */
 function ConversionFunnel() {
   return (
     <Card>
@@ -110,8 +114,9 @@ function ConversionFunnel() {
   );
 }
 
+/* ── Response Time ────────────────────────────────── */
 function ResponseTime() {
-  const r = 26;
+  const r = 30;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - 0.65);
   return (
@@ -120,9 +125,9 @@ function ResponseTime() {
       <CardBody>
         <div className="resp-wrap">
           <div className="resp-ring">
-            <svg width="80" height="80" viewBox="0 0 80 80" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="40" cy="40" r={r} fill="none" stroke="var(--border-light)" strokeWidth="6"/>
-              <circle cx="40" cy="40" r={r} fill="none" stroke="var(--green)" strokeWidth="6"
+            <svg width="88" height="88" viewBox="0 0 88 88" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="44" cy="44" r={r} fill="none" stroke="var(--border-light)" strokeWidth="7"/>
+              <circle cx="44" cy="44" r={r} fill="none" stroke="var(--green)" strokeWidth="7"
                 strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"/>
             </svg>
             <span className="resp-val">2.4h</span>
@@ -135,6 +140,7 @@ function ResponseTime() {
   );
 }
 
+/* ── Dashboard ────────────────────────────────────── */
 export default function Dashboard() {
   return (
     <div className="page-content">

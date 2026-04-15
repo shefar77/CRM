@@ -1,5 +1,7 @@
+/* ── Reset ─────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Design tokens ─────────────────────────────── */
 :root {
   --primary:        #4F46E5;
   --primary-hover:  #4338CA;
@@ -8,8 +10,10 @@
 
   --green:          #16A34A;
   --green-bg:       #F0FDF4;
+
   --red:            #DC2626;
   --red-bg:         #FEF2F2;
+
   --amber:          #D97706;
   --amber-bg:       #FFFBEB;
 
@@ -25,8 +29,8 @@
   --sidebar-w:      220px;
   --topbar-h:       52px;
 
-  --shadow-sm:      0 1px 2px rgba(0,0,0,0.05);
-  --shadow:         0 1px 3px rgba(0,0,0,0.08);
+  --shadow-sm:      0 1px 2px rgba(0,0,0,.05);
+  --shadow:         0 1px 3px rgba(0,0,0,.08);
 
   --radius-sm:      4px;
   --radius:         6px;
@@ -35,24 +39,116 @@
   --transition:     120ms ease;
 }
 
+/* ── Base ──────────────────────────────────────── */
 html, body, #root {
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar          { width: 4px; height: 4px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
 
-.font-medium { font-weight: 500; }
-.text-green  { color: var(--green); }
-.text-red    { color: var(--red); }
-.text-amber  { color: var(--amber); }
-.text-muted  { color: var(--text2); }
-.text-hint   { color: var(--text3); }
+/* ── Shared page layout helper ─────────────────── */
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Page header ───────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.page-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.page-subtitle {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.page-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Shared filter bar ─────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color var(--transition);
+}
+.filter-select:focus { border-color: var(--primary-muted); }
+
+/* ── Shared data table ─────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  color: var(--text);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: #FAFBFC; cursor: pointer; }
+.th--padl, .td--padl { padding-left: 20px !important; }
+.th--padr, .td--padr { padding-right: 20px !important; }
+
+/* ── Two-col grid ──────────────────────────────── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* ── KPI grid ──────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px)  { .kpi-grid { grid-template-columns: 1fr; } }

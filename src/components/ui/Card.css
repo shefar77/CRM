@@ -1,28 +1,30 @@
 .card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
   overflow: hidden;
 }
+
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
-  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #E2E8F0;
 }
+
 .card-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text);
+  color: #0F172A;
 }
-.card-header-right {
+
+.card-header__right {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 8px;
 }
-.card-body { padding: 14px 16px; }
-.card-body--nopad { padding: 0; }
+
+.card-body          { padding: 16px 18px; }
+.card-body--nopad   { padding: 0; }
