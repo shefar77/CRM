@@ -31,6 +31,71 @@
 .kpi-delta--down     { color: var(--red); }
 .kpi-delta--neutral  { color: var(--text3); }
 
+/* ── Clickable KPI ────────────────────────────────── */
+.kpi-card--clickable {
+  cursor: pointer;
+  position: relative;
+}
+.kpi-card--clickable:hover {
+  border-color: var(--primary-muted);
+  box-shadow: 0 0 0 3px var(--primary-bg), var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.kpi-card--clickable:active {
+  transform: translateY(0);
+}
+.kpi-cta {
+  display: block;
+  font-size: 11px;
+  color: var(--primary);
+  margin-top: 6px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.kpi-card--clickable:hover .kpi-cta { opacity: 1; }
+
+/* ── Tablet optimisation (≤1024px) ───────────────── */
+@media (max-width: 1024px) {
+  /* Tighter page spacing */
+  .page-content { gap: 12px !important; }
+
+  /* Smaller KPI cards */
+  .kpi-card { padding: 14px 16px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { margin-bottom: 6px; }
+  .kpi-delta { font-size: 11px; }
+
+  /* Pipeline compact */
+  .pipeline__stage { padding: 12px 14px; min-width: 100px; }
+  .pipeline__count { font-size: 20px; }
+  .pipeline__value { font-size: 11px; margin-bottom: 8px; }
+
+  /* Leaderboard compact rows */
+  .leaderboard-table td { padding: 10px 12px; }
+  .leaderboard-table th { padding: 8px 12px; }
+  .agent-name { min-width: 90px; font-size: 12px; }
+  .mini-bar   { width: 60px; }
+
+  /* Bottom grid: stack side panel below at 900px, keep 2-col at 1024 */
+  .dash-bottom {
+    grid-template-columns: 3fr 1fr;
+    gap: 12px;
+  }
+
+  /* Funnel compact */
+  .funnel-row { padding: 6px 0; }
+  .funnel-track { height: 10px; }
+
+  /* Response time smaller ring */
+  .resp-ring { width: 72px; height: 72px; }
+  .resp-val  { font-size: 13px; }
+}
+
+@media (max-width: 900px) {
+  .dash-bottom { grid-template-columns: 1fr; }
+}
+
 /* ── Pipeline ─────────────────────────────────────── */
 .pipeline {
   display: flex;

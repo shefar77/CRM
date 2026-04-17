@@ -6,13 +6,21 @@ import Button from '../ui/Button';
 import { kpis, pipeline, agents, funnel } from '../../data/mockData';
 import './Dashboard.css';
 
-/* ── KPI Card ─────────────────────────────────────── */
-function KpiCard({ label, value, delta, trend }) {
+/* ── Clickable KPI Card ───────────────────────────── */
+function KpiCard({ label, value, delta, trend, filter, onClick }) {
+  const clickable = !!filter;
   return (
-    <div className="kpi-card">
+    <div
+      className={`kpi-card ${clickable ? 'kpi-card--clickable' : ''}`}
+      onClick={() => clickable && onClick(filter)}
+      title={clickable ? `Filter leads by: ${label}` : undefined}
+    >
       <p className="kpi-label">{label}</p>
       <p className="kpi-value">{value}</p>
       <p className={`kpi-delta kpi-delta--${trend}`}>{delta}</p>
+      {clickable && (
+        <span className="kpi-cta">View leads →</span>
+      )}
     </div>
   );
 }
@@ -140,11 +148,10 @@ function ResponseTime() {
   );
 }
 
-/* ── Dashboard ────────────────────────────────────── */
-export default function Dashboard() {
+/* ── Dashboard Page ───────────────────────────────── */
+export default function Dashboard({ onKpiClick }) {
   return (
     <div className="page-content">
-      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
@@ -155,15 +162,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
       <div className="kpi-grid">
-        {kpis.map((k, i) => <KpiCard key={i} {...k} />)}
+        {kpis.map((k, i) => (
+          <KpiCard key={i} {...k} onClick={onKpiClick} />
+        ))}
       </div>
 
-      {/* Pipeline */}
       <PipelineView />
 
-      {/* Bottom row */}
       <div className="dash-bottom">
         <div className="dash-bottom__main">
           <Leaderboard />
