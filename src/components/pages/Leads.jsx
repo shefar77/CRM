@@ -3,283 +3,299 @@ import { Card, CardBody } from '../ui/Card';
 import Badge from '../ui/Badge';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
-import { leads } from '../../data/mockData';
+import Modal from '../common/Modal';
+import AddLeadModal from '../common/AddLeadModal';
+import { useApp } from '../../context/AppContext';
 import './Leads.css';
+import { toCSV, downloadCSV } from '../../utils/csvExport';
 
-/* ── Constants ────────────────────────────────────── */
-const STATUS_VARIANT = {
-  New: 'blue', Contacted: 'amber', Viewing: 'green',
-  Negotiation: 'amber', Stale: 'red', Closed: 'green',
-};
-const SOURCE_VARIANT = { 'Meta Ads': 'blue', Website: 'gray', Manual: 'gray', Referral: 'gray' };
-const UNIQUE_STATUSES = ['New', 'Contacted', 'Viewing', 'Negotiation', 'Stale', 'Closed'];
-const UNIQUE_SOURCES  = ['Meta Ads', 'Website', 'Manual', 'Referral'];
+const STATUS_VARIANT = { New:'blue', Contacted:'amber', Viewing:'green', Negotiation:'amber', Stale:'red', Closed:'green' };
+const SOURCE_VARIANT = { 'Meta Ads':'blue', Website:'gray', Manual:'gray', Referral:'gray' };
+const ALL_STATUSES   = ['New','Contacted','Viewing','Negotiation','Stale','Closed'];
+const ALL_SOURCES    = ['Meta Ads','Website','Manual','Referral'];
+const PROGRESS_STEPS = ['Inquiry','Site Visit','Negotiation','Token','Registry'];
 
-/* ── Progress steps ───────────────────────────────── */
-const PROGRESS_STEPS = ['Inquiry', 'Site Visit', 'Negotiation', 'Token', 'Registry'];
-function getProgressStep(lead) {
-  if (lead.status === 'Closed') return 4;
-  if (lead.status === 'Negotiation') return 2;
-  if (lead.status === 'Viewing') return 1;
-  if (lead.status === 'Contacted') return 1;
+function getStep(l) {
+  if (l.status==='Closed') return 4;
+  if (l.status==='Negotiation') return 2;
+  if (l.status==='Viewing') return 1;
+  if (l.status==='Contacted') return 1;
   return 0;
 }
 
-/* ── Lead Detail Modal ────────────────────────────── */
 function LeadModal({ lead, onClose }) {
-  const [comments, setComments] = useState(lead.comments || []);
-  const [draft, setDraft]       = useState('');
-  const overlayRef              = useRef(null);
+  const { updateLead, assignAgent, addComment, agents, toast } = useApp();
+  const [comments, setLocalComments] = useState(lead.comments || []);
+  const [draft,    setDraft]         = useState('');
+  const [status,   setStatus]        = useState(lead.status);
+  const [saving,   setSaving]        = useState(false);
+  const step = getStep({ ...lead, status });
 
-  // Close on backdrop click
-  const handleBackdrop = (e) => { if (e.target === overlayRef.current) onClose(); };
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  // Lock scroll
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  const addComment = () => {
-    if (!draft.trim()) return;
-    setComments(prev => [...prev, {
-      author: 'Aarav Kapoor', time: 'Just now', text: draft.trim(),
-    }]);
-    setDraft('');
+  const handleStatusSave = async () => {
+    if (status === lead.status) return;
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 400));
+    updateLead({ id: lead.id, status });
+    toast(`${lead.name} moved to ${status}`, 'success');
+    setSaving(false);
   };
 
-  const step = getProgressStep(lead);
+  const handleAssign = (agentName) => {
+    assignAgent(lead.id, agentName);
+    toast(`Assigned to ${agentName}`, 'info');
+  };
+
+  const postComment = () => {
+    if (!draft.trim()) return;
+    const comment = { author: 'Aarav Kapoor', time: 'Just now', text: draft.trim() };
+    addComment(lead.id, comment);
+    setLocalComments(prev => [...prev, comment]);
+    setDraft('');
+    toast('Comment added', 'success');
+  };
 
   return (
-    <div className="modal-overlay" ref={overlayRef} onClick={handleBackdrop}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={`Lead details: ${lead.name}`}>
-        {/* Header */}
-        <div className="modal-header">
-          <div className="modal-header-left">
-            <Avatar initials={lead.agentInitials} size="lg" color={lead.agentColor} />
-            <div>
-              <h2 className="modal-name">{lead.name}</h2>
-              <p className="modal-sub">{lead.propertyName} · {lead.areaName}</p>
+    <Modal
+      title={`${lead.name} — Lead Details`}
+      onClose={onClose}
+      width={820}
+      footer={
+        <div style={{ display:'flex', gap:8, width:'100%', alignItems:'center' }}>
+          <span style={{ flex:1, fontSize:11, color:'var(--text3)' }}>Last activity: {lead.lastActivity}</span>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+          <Button variant="primary" onClick={handleStatusSave} disabled={saving || status===lead.status}>
+            {saving ? 'Saving…' : 'Update Status'}
+          </Button>
+        </div>
+      }
+    >
+      <div className="lead-modal-cols">
+        {/* Left */}
+        <div className="lead-modal-left">
+          <section className="lm-section">
+            <h3 className="lm-section-title">Contact Info</h3>
+            <div className="lm-grid">
+              <div className="lm-item"><span className="lm-lbl">Phone</span><span className="lm-val">{lead.phone}</span></div>
+              <div className="lm-item"><span className="lm-lbl">Email</span><span className="lm-val" style={{color:'var(--primary)'}}>{lead.email}</span></div>
+              <div className="lm-item"><span className="lm-lbl">Budget</span><span className="lm-val" style={{fontWeight:600}}>{lead.budget}</span></div>
+              <div className="lm-item"><span className="lm-lbl">Source</span><span className="lm-val"><Badge variant={SOURCE_VARIANT[lead.source]||'gray'}>{lead.source}</Badge></span></div>
+              <div className="lm-item"><span className="lm-lbl">Property</span><span className="lm-val">{lead.propertyName}</span></div>
+              <div className="lm-item"><span className="lm-lbl">Area</span><span className="lm-val">{lead.areaName}</span></div>
             </div>
-          </div>
-          <div className="modal-header-right">
-            <Badge variant={STATUS_VARIANT[lead.status] || 'gray'}>{lead.status}</Badge>
-            <button className="modal-close" onClick={onClose} aria-label="Close">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
+          </section>
+
+          <section className="lm-section">
+            <h3 className="lm-section-title">Status & Assignment</h3>
+            <div className="lm-grid">
+              <div className="lm-item lm-item--full">
+                <span className="lm-lbl">Move to stage</span>
+                <select className="form-select" value={status} onChange={e => setStatus(e.target.value)}>
+                  {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="lm-item lm-item--full">
+                <span className="lm-lbl">Assigned Agent</span>
+                <select className="form-select" value={lead.agent} onChange={e => handleAssign(e.target.value)}>
+                  {agents.map(a => <option key={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section className="lm-section">
+            <h3 className="lm-section-title">Deal Progress</h3>
+            <div className="progress-steps">
+              {PROGRESS_STEPS.map((s, i) => (
+                <div key={i} className={`progress-step${i<=step?' progress-step--done':''}${i===step?' progress-step--active':''}`}>
+                  <div className="progress-dot"/>{i<PROGRESS_STEPS.length-1&&<div className="progress-line"/>}
+                  <span className="progress-label">{s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="lm-grid" style={{marginTop:10}}>
+              <div className="lm-item"><span className="lm-lbl">Stage</span><span className="lm-val">{lead.dealProgress}</span></div>
+              <div className="lm-item"><span className="lm-lbl">Payment</span><span className="lm-val">{lead.paymentStatus}</span></div>
+            </div>
+          </section>
+
+          {lead.notes && (
+            <section className="lm-section">
+              <h3 className="lm-section-title">Notes</h3>
+              <p className="lm-notes">{lead.notes}</p>
+            </section>
+          )}
         </div>
 
-        <div className="modal-body">
-          {/* Two col layout */}
-          <div className="modal-cols">
-            {/* Left */}
-            <div className="modal-left">
-              {/* Contact */}
-              <section className="modal-section">
-                <h3 className="modal-section-title">Contact Info</h3>
-                <div className="modal-info-grid">
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Phone</span>
-                    <span className="modal-info-value">{lead.phone}</span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Email</span>
-                    <span className="modal-info-value">{lead.email}</span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Source</span>
-                    <span className="modal-info-value"><Badge variant={SOURCE_VARIANT[lead.source] || 'gray'}>{lead.source}</Badge></span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Budget</span>
-                    <span className="modal-info-value" style={{ fontWeight: 600 }}>{lead.budget}</span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Agent</span>
-                    <span className="modal-info-value">{lead.agent}</span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Last Activity</span>
-                    <span className="modal-info-value">{lead.lastActivity}</span>
-                  </div>
+        {/* Right - Comments */}
+        <div className="lead-modal-right">
+          <section className="lm-section" style={{flex:1,display:'flex',flexDirection:'column'}}>
+            <h3 className="lm-section-title">Internal Comments</h3>
+            <div className="lm-thread">
+              {comments.length === 0 && <p className="lm-empty">No comments yet.</p>}
+              {comments.map((c, i) => (
+                <div key={i} className="lm-comment">
+                  <div className="lm-comment-meta"><span className="lm-comment-author">{c.author}</span><span className="lm-comment-time">{c.time}</span></div>
+                  <p className="lm-comment-text">{c.text}</p>
                 </div>
-              </section>
-
-              {/* Deal Progress */}
-              <section className="modal-section">
-                <h3 className="modal-section-title">Deal Progress</h3>
-                <div className="progress-steps">
-                  {PROGRESS_STEPS.map((s, i) => (
-                    <div key={i} className={`progress-step ${i <= step ? 'progress-step--done' : ''} ${i === step ? 'progress-step--active' : ''}`}>
-                      <div className="progress-dot" />
-                      {i < PROGRESS_STEPS.length - 1 && <div className="progress-line" />}
-                      <span className="progress-label">{s}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="modal-info-grid" style={{ marginTop: 12 }}>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Current Stage</span>
-                    <span className="modal-info-value">{lead.dealProgress}</span>
-                  </div>
-                  <div className="modal-info-item">
-                    <span className="modal-info-label">Payment</span>
-                    <span className="modal-info-value">{lead.paymentStatus}</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* Notes */}
-              <section className="modal-section">
-                <h3 className="modal-section-title">Notes</h3>
-                <p className="modal-notes">{lead.notes}</p>
-              </section>
+              ))}
             </div>
-
-            {/* Right — Internal Comments */}
-            <div className="modal-right">
-              <section className="modal-section modal-section--full">
-                <h3 className="modal-section-title">Internal Comments</h3>
-                <div className="modal-thread">
-                  {comments.length === 0
-                    ? <p className="modal-thread-empty">No comments yet.</p>
-                    : comments.map((c, i) => (
-                      <div key={i} className="modal-comment">
-                        <div className="modal-comment-meta">
-                          <span className="modal-comment-author">{c.author}</span>
-                          <span className="modal-comment-time">{c.time}</span>
-                        </div>
-                        <p className="modal-comment-text">{c.text}</p>
-                      </div>
-                    ))
-                  }
-                </div>
-                <div className="modal-compose">
-                  <input
-                    className="modal-input"
-                    placeholder="Add an internal note…"
-                    value={draft}
-                    onChange={e => setDraft(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }}
-                  />
-                  <button className="modal-send-btn" onClick={addComment} disabled={!draft.trim()}>Post</button>
-                </div>
-              </section>
+            <div className="lm-compose">
+              <input className="form-input" placeholder="Add internal note… (Enter)" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();postComment();}}} />
+              <Button variant="primary" size="sm" onClick={postComment} disabled={!draft.trim()}>Post</Button>
             </div>
-          </div>
+          </section>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+function InlineComment({ leadId, comments, onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const submit = (e) => {
+    e.stopPropagation();
+    if (!draft.trim()) return;
+    onAdd(draft.trim());
+    setDraft('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="inline-comment" ref={ref} onClick={e=>e.stopPropagation()}>
+      <button className="inline-comment-btn" onClick={e=>{e.stopPropagation();setOpen(v=>!v);}}>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M3 12l2-3h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+        {comments.length > 0 && <span className="inline-comment-count">{comments.length}</span>}
+      </button>
+      {open && (
+        <div className="inline-comment-popup" onClick={e=>e.stopPropagation()}>
+          <div className="icp-thread">
+            {comments.length===0 ? <p className="icp-empty">No notes yet.</p> : comments.map((c,i)=>(
+              <div key={i} className="icp-msg">
+                <div><span className="icp-author">{c.author}</span><span className="icp-time"> · {c.time}</span></div>
+                <p className="icp-text">{c.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="icp-compose">
+            <input className="icp-input" placeholder="Add note…" value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')submit(e);}} autoFocus />
+            <button className="icp-send" onClick={submit} disabled={!draft.trim()}>Add</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Leads Page ───────────────────────────────────── */
-export default function Leads({ initialFilter = '', onFilterConsumed }) {
+export default function Leads({ initialFilter = '', onFilterConsumed, openLeadId, onLeadOpened}) {
+  const { leads, addComment, assignAgent, agents, toast } = useApp();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterAgent,  setFilterAgent]  = useState('');
   const [search,       setSearch]       = useState('');
   const [selectedLead, setSelectedLead] = useState(null);
+  const [showAdd,      setShowAdd]      = useState(false);
 
-  // Local comments state per lead
-  const [leadComments, setLeadComments] = useState(
-    () => Object.fromEntries(leads.map(l => [l.id, l.comments || []]))
-  );
-
-  // Apply initialFilter from dashboard KPI click
   useEffect(() => {
     if (!initialFilter) return;
-    if (initialFilter === 'active') setFilterStatus('');
     if (initialFilter === 'closed') setFilterStatus('Closed');
-    if (initialFilter === 'total')  { setFilterStatus(''); setFilterSource(''); setFilterAgent(''); setSearch(''); }
+    else { setFilterStatus(''); }
     if (onFilterConsumed) onFilterConsumed();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFilter]);
 
-  // Active = not Closed
-  const activeFilter = initialFilter === 'active';
+  useEffect(() => {
+    if (!openLeadId) return;
+    const lead = leads.find(l => l.id === openLeadId);
+    if (lead) setSelectedLead(lead);
+    if (onLeadOpened) onLeadOpened();
+  }, [openLeadId, leads]);
 
-  const uniqueAgents = useMemo(() => [...new Set(leads.map(l => l.agent))], []);
+  const activeOnly = initialFilter === 'active';
+  const uniqueAgents = useMemo(() => [...new Set(leads.map(l => l.agent))], [leads]);
 
   const filtered = useMemo(() => leads.filter(l => {
-    if (activeFilter && l.status === 'Closed') return false;
+    if (activeOnly && l.status === 'Closed') return false;
     if (filterStatus && l.status !== filterStatus) return false;
     if (filterSource && l.source !== filterSource) return false;
     if (filterAgent  && l.agent  !== filterAgent)  return false;
     if (search && !l.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [filterStatus, filterSource, filterAgent, search, activeFilter]);
+  }), [leads, filterStatus, filterSource, filterAgent, search, activeOnly]);
 
   const clearAll = () => { setFilterStatus(''); setFilterSource(''); setFilterAgent(''); setSearch(''); };
-  const hasFilter = filterStatus || filterSource || filterAgent || search || activeFilter;
+  const hasFilter = filterStatus || filterSource || filterAgent || search || activeOnly;
 
-  const addComment = (leadId, text) => {
-    setLeadComments(prev => ({
-      ...prev,
-      [leadId]: [...(prev[leadId] || []), { author: 'Aarav Kapoor', time: 'Just now', text }],
-    }));
+  const handleAddComment = (leadId, text) => {
+    addComment(leadId, { author: 'Aarav Kapoor', time: 'Just now', text });
+    toast('Comment added', 'success');
   };
 
+  const handleAssignAgent = (leadId, agentName) => {
+    assignAgent(leadId, agentName);
+    toast(`Assigned to ${agentName}`, 'info');
+  };
+
+  useEffect(() => {
+    if (selectedLead) {
+      const updated = leads.find(l => l.id === selectedLead.id);
+      if (updated) setSelectedLead(updated);
+    }
+  }, [leads]);
+
+   const handleExport = () => {
+    const rows = [["Name","Budget","Property","Area","Source","Status","Agent","Last Activity"]];
+    filtered.forEach(l => rows.push([l.name, l.budget, l.propertyName||'', l.areaName||'', l.source, l.status, l.agent, l.lastActivity]));
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement("a"), { href: url, download: "leads.csv" });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Leads exported as CSV", "success");
+  };
+  
   return (
     <div className="page-content">
-      {selectedLead && (
-        <LeadModal
-          lead={{ ...selectedLead, comments: leadComments[selectedLead.id] || [] }}
-          onClose={() => setSelectedLead(null)}
-        />
-      )}
+      {showAdd && <AddLeadModal onClose={() => setShowAdd(false)} />}
+      {selectedLead && <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
 
-      {/* Header */}
       <div className="page-header">
         <div>
           <h1 className="page-title">Leads</h1>
-          <p className="page-subtitle">
-            {leads.length} total leads · {leads.filter(l => l.status !== 'Closed').length} active
-            {activeFilter && <span className="filter-tag">Showing: Active only</span>}
-            {filterStatus === 'Closed' && <span className="filter-tag">Showing: Closed deals</span>}
-          </p>
+          <p className="page-subtitle">{leads.length} total · {leads.filter(l=>l.status!=='Closed').length} active</p>
         </div>
         <div className="page-header__right">
           <Button variant="ghost">Export</Button>
-          <Button variant="primary">+ New Lead</Button>
+          <Button variant="primary" onClick={() => setShowAdd(true)}>+ New Lead</Button>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="filter-bar">
-        <input
-          type="search"
-          className="leads-search"
-          placeholder="Search by name…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <select className="filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <input type="search" className="leads-search" placeholder="Search by name…" value={search} onChange={e=>setSearch(e.target.value)} />
+        <select className="filter-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
           <option value="">All Statuses</option>
-          {UNIQUE_STATUSES.map(s => <option key={s}>{s}</option>)}
+          {ALL_STATUSES.map(s=><option key={s}>{s}</option>)}
         </select>
-        <select className="filter-select" value={filterSource} onChange={e => setFilterSource(e.target.value)}>
+        <select className="filter-select" value={filterSource} onChange={e=>setFilterSource(e.target.value)}>
           <option value="">All Sources</option>
-          {UNIQUE_SOURCES.map(s => <option key={s}>{s}</option>)}
+          {ALL_SOURCES.map(s=><option key={s}>{s}</option>)}
         </select>
-        <select className="filter-select" value={filterAgent} onChange={e => setFilterAgent(e.target.value)}>
+        <select className="filter-select" value={filterAgent} onChange={e=>setFilterAgent(e.target.value)}>
           <option value="">All Agents</option>
-          {uniqueAgents.map(a => <option key={a}>{a}</option>)}
+          {uniqueAgents.map(a=><option key={a}>{a}</option>)}
         </select>
-        {hasFilter && <button className="clear-btn" onClick={clearAll}>Clear filters</button>}
+        {hasFilter && <button className="clear-btn" onClick={clearAll}>Clear</button>}
       </div>
 
-      {/* Table */}
       <Card>
         <CardBody noPad>
           <div className="table-scroll">
@@ -292,123 +308,47 @@ export default function Leads({ initialFilter = '', onFilterConsumed }) {
                   <th>Source</th>
                   <th>Status</th>
                   <th>Assigned Agent</th>
-                  <th>Internal Comments</th>
+                  <th>Comments</th>
                   <th className="th--padr">Last Activity</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="empty-cell">No leads match the current filters.</td>
+                  <tr><td colSpan={8} className="empty-cell">No leads match current filters.</td></tr>
+                ) : filtered.map(lead => (
+                  <tr key={lead.id} className="lead-row" onClick={() => setSelectedLead(lead)}>
+                    <td className="td--padl lead-name">{lead.name}</td>
+                    <td className="lead-budget">{lead.budget}</td>
+                    <td>
+                      <span className="prop-name">{lead.propertyName || '—'}</span>
+                      <span className="prop-area">{lead.areaName}</span>
+                    </td>
+                    <td><Badge variant={SOURCE_VARIANT[lead.source]||'gray'}>{lead.source}</Badge></td>
+                    <td><Badge variant={STATUS_VARIANT[lead.status]||'gray'}>{lead.status}</Badge></td>
+                    <td onClick={e=>e.stopPropagation()}>
+                      <div className="agent-cell">
+                        <Avatar initials={lead.agentInitials} size="sm" color={lead.agentColor} />
+                        <select
+                          className="agent-assign-select"
+                          value={lead.agent}
+                          onChange={e => handleAssignAgent(lead.id, e.target.value)}
+                        >
+                          {agents.map(a => <option key={a.id}>{a.name}</option>)}
+                        </select>
+                      </div>
+                    </td>
+                    <td onClick={e=>e.stopPropagation()}>
+                      <InlineComment leadId={lead.id} comments={lead.comments||[]} onAdd={text => handleAddComment(lead.id, text)} />
+                    </td>
+                    <td className="td--padr lead-time">{lead.lastActivity}</td>
                   </tr>
-                ) : filtered.map(lead => {
-                  const comments = leadComments[lead.id] || [];
-                  return (
-                    <tr
-                      key={lead.id}
-                      className="lead-row"
-                      onClick={() => setSelectedLead(lead)}
-                      title="Click to view full details"
-                    >
-                      <td className="td--padl lead-name">{lead.name}</td>
-                      <td className="lead-budget">{lead.budget}</td>
-                      <td className="lead-property">
-                        <span className="prop-name">{lead.propertyName}</span>
-                        <span className="prop-area">{lead.areaName}</span>
-                      </td>
-                      <td><Badge variant={SOURCE_VARIANT[lead.source] || 'gray'}>{lead.source}</Badge></td>
-                      <td><Badge variant={STATUS_VARIANT[lead.status] || 'gray'}>{lead.status}</Badge></td>
-                      <td>
-                        <div className="agent-cell">
-                          <Avatar initials={lead.agentInitials} size="sm" color={lead.agentColor} />
-                          <span>{lead.agent}</span>
-                        </div>
-                      </td>
-                      <td onClick={e => e.stopPropagation()}>
-                        <InlineComment
-                          comments={comments}
-                          onAdd={(text) => addComment(lead.id, text)}
-                        />
-                      </td>
-                      <td className="td--padr lead-time">{lead.lastActivity}</td>
-                    </tr>
-                  );
-                })}
+                ))}
               </tbody>
             </table>
           </div>
-          <div className="table-footer">
-            Showing {filtered.length} of {leads.length} leads
-          </div>
+          <div className="table-footer">Showing {filtered.length} of {leads.length} leads</div>
         </CardBody>
       </Card>
-    </div>
-  );
-}
-
-/* ── Inline Comment Cell ──────────────────────────── */
-function InlineComment({ comments, onAdd }) {
-  const [open, setOpen]   = useState(false);
-  const [draft, setDraft] = useState('');
-  const ref               = useRef(null);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  const submit = (e) => {
-    e.stopPropagation();
-    if (!draft.trim()) return;
-    onAdd(draft.trim());
-    setDraft('');
-    setOpen(false);
-  };
-
-  return (
-    <div className="inline-comment" ref={ref}>
-      <button
-        className="inline-comment-btn"
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-        title={comments.length ? `${comments.length} comment(s)` : 'Add comment'}
-      >
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-          <rect x="1" y="1" width="11" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
-          <path d="M3 12l2-3h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
-        {comments.length > 0 && <span className="inline-comment-count">{comments.length}</span>}
-      </button>
-
-      {open && (
-        <div className="inline-comment-popup" onClick={e => e.stopPropagation()}>
-          <div className="icp-thread">
-            {comments.length === 0
-              ? <p className="icp-empty">No notes yet.</p>
-              : comments.map((c, i) => (
-                <div key={i} className="icp-msg">
-                  <span className="icp-author">{c.author}</span>
-                  <span className="icp-time">{c.time}</span>
-                  <p className="icp-text">{c.text}</p>
-                </div>
-              ))
-            }
-          </div>
-          <div className="icp-compose">
-            <input
-              className="icp-input"
-              placeholder="Add note…"
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') submit(e); }}
-              autoFocus
-            />
-            <button className="icp-send" onClick={submit} disabled={!draft.trim()}>Add</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

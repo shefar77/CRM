@@ -2,29 +2,21 @@
   background: #fff;
   border: 1px solid #E2E8F0;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
   overflow: hidden;
 }
-
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 13px 18px;
   border-bottom: 1px solid #E2E8F0;
 }
-
 .card-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #0F172A;
 }
-
-.card-header__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-body          { padding: 16px 18px; }
-.card-body--nopad   { padding: 0; }
+.card-header__right { display: flex; align-items: center; gap: 8px; }
+.card-body       { padding: 16px 18px; }
+.card-body--nopad{ padding: 0; }
