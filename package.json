@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npx react-scripts build || true ",
+    "build": "CI=false react-scripts build",
     "test": "react-scripts test"
   },
   "browserslist": {
