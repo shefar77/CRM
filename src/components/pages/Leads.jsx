@@ -199,6 +199,7 @@ function InlineComment({ leadId, comments, onAdd }) {
 export default function Leads({ initialFilter = '', onFilterConsumed, openLeadId, onLeadOpened}) {
   const { leads, addComment, assignAgent, agents, toast } = useApp();
   const [filterStatus, setFilterStatus] = useState('');
+  const [activeOnly,   setActiveOnly]   = useState(false);
   const [filterSource, setFilterSource] = useState('');
   const [filterAgent,  setFilterAgent]  = useState('');
   const [search,       setSearch]       = useState('');
@@ -207,8 +208,16 @@ export default function Leads({ initialFilter = '', onFilterConsumed, openLeadId
 
   useEffect(() => {
     if (!initialFilter) return;
-    if (initialFilter === 'closed') setFilterStatus('Closed');
-    else { setFilterStatus(''); }
+    setFilterStatus('');
+    setFilterSource('');
+    setFilterAgent('');
+    setSearch('');
+    setActiveOnly(false);
+    if (initialFilter === 'closed') {
+      setFilterStatus('Closed');
+    } else if (initialFilter === 'active') {
+      setActiveOnly(true);         
+    }
     if (onFilterConsumed) onFilterConsumed();
   }, [initialFilter]);
 
@@ -219,11 +228,10 @@ export default function Leads({ initialFilter = '', onFilterConsumed, openLeadId
     if (onLeadOpened) onLeadOpened();
   }, [openLeadId, leads]);
 
-  const activeOnly = initialFilter === 'active';
   const uniqueAgents = useMemo(() => [...new Set(leads.map(l => l.agent))], [leads]);
 
   const filtered = useMemo(() => leads.filter(l => {
-    if (activeOnly && l.status === 'Closed') return false;
+    if (activeOnly && (l.status === 'Closed' || l.status === 'Stale')) return false;
     if (filterStatus && l.status !== filterStatus) return false;
     if (filterSource && l.source !== filterSource) return false;
     if (filterAgent  && l.agent  !== filterAgent)  return false;
@@ -231,7 +239,7 @@ export default function Leads({ initialFilter = '', onFilterConsumed, openLeadId
     return true;
   }), [leads, filterStatus, filterSource, filterAgent, search, activeOnly]);
 
-  const clearAll = () => { setFilterStatus(''); setFilterSource(''); setFilterAgent(''); setSearch(''); };
+  const clearAll = () => { setFilterStatus(''); setFilterSource(''); setFilterAgent(''); setSearch(''); setActiveOnly(false); };
   const hasFilter = filterStatus || filterSource || filterAgent || search || activeOnly;
 
   const handleAddComment = (leadId, text) => {

@@ -84,53 +84,7 @@ function Leaderboard({ agents }) {
       </CardBody>
     </Card>
   );
-}
-
-function ConversionFunnel({ leads }) {
-  const funnelData = [
-    { label:'Lead',    count: leads.length,                                   color:'var(--primary)' },
-    { label:'Viewing', count: leads.filter(l=>l.status==='Viewing').length,   color:'var(--primary)' },
-    { label:'Offer',   count: leads.filter(l=>l.status==='Negotiation').length, color:'var(--primary)' },
-    { label:'Closed',  count: leads.filter(l=>l.status==='Closed').length,    color:'var(--green)'   },
-  ];
-  const max = funnelData[0].count || 1;
-  return (
-    <Card>
-      <CardHeader title="Conversion Funnel" />
-      <CardBody>
-        {funnelData.map((row, i) => (
-          <div key={i} className="funnel-row">
-            <span className="funnel-label">{row.label}</span>
-            <div className="funnel-track"><div className="funnel-fill" style={{width:`${(row.count/max)*100}%`,background:row.color}}/></div>
-            <span className="funnel-count">{row.count}</span>
-          </div>
-        ))}
-      </CardBody>
-    </Card>
-  );
-}
-
-function ResponseTime() {
-  const r=30, circ=2*Math.PI*r, offset=circ*(1-0.65);
-  return (
-    <Card>
-      <CardHeader title="Avg. Response Time"/>
-      <CardBody>
-        <div className="resp-wrap">
-          <div className="resp-ring">
-            <svg width="100%" height="100%" viewBox="0 0 88 88" style={{transform:'rotate(-90deg)',display:'block'}}>
-              <circle cx="44" cy="44" r={r} fill="none" stroke="var(--border-light)" strokeWidth="7"/>
-              <circle cx="44" cy="44" r={r} fill="none" stroke="var(--green)" strokeWidth="7" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"/>
-            </svg>
-            <span className="resp-val">2.4h</span>
-          </div>
-          <p className="resp-status">Fast</p>
-          <p className="resp-sub">Top 20% of teams</p>
-        </div>
-      </CardBody>
-    </Card>
-  );
-}
+} 
 
 export default function Dashboard({ onKpiClick }) {
   const { leads, agents } = useApp();
@@ -154,10 +108,7 @@ export default function Dashboard({ onKpiClick }) {
         {liveKpis.map((k,i) => <KpiCard key={i} {...k} onClick={onKpiClick} />)}
       </div>
       <PipelineView leads={leads} />
-      <div className="dash-bottom">
-        <div className="dash-bottom__main"><Leaderboard agents={agents} /></div>
-        <div className="dash-bottom__side"><ConversionFunnel leads={leads} /><ResponseTime /></div>
-      </div>
+      <Leaderboard agents={agents} />
     </div>
   );
 }
